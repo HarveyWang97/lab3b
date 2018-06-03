@@ -51,11 +51,65 @@ def main():
       	elif(line[0] == "DIRENT"):
          	dirent_list.append(line)
 
+    BG_DATA_BLOCK = int(first_inode_block + math.ceil( (total_inodes * inode_size) / block_size ))
+    allocated_blocks = []
 
-    # handle the 
+    # inode allocation audits
+    for item in inode_list:
+        block_offset = 0
+        for inode in item[12:27]:
+            num = item[1]
+            Message = 'BLOCK'
+            offset = block_offset
+            if block_offset == 12:
+                Message = 'INDIRECT BLOCK'
+            elif block_offset == 13:
+                offset = 268
+                Message = 'DOUBLE INDIRECT BLOCK'
+            elif block_offset == 14:
+                offset = 65804
+                Message = 'TRIPLE INDIRECT BLOCK'
+
+            if int(inode) < 0 or int(inode) >= total_blocks:
+                print("INVALID {} {} IN INODE {} AT OFFSET {}".format(Message,inode,num, offset))
+            elif int(inode) < BG_DATA_BLOCK and int(inode) > 0:
+                print("RESERVED {} {} IN INODE {} AT OFFSET {}".format(Message, inode, num, offset))
+            elif int(block) > 0:
+                allocated_blocks.append(int(inode))
+            block_offset+=1
+
+    # handle the indirect blocks
+    for item in indirect_entries:
+        i_type = item[2]
+        Message = ''
+        if i_type  == '1':
+            Message = 'INDIRECT BLOCK'
+        elif i_type  == '2':
+            Message = 'DOUBLE INDIRECT BLOCK'
+        elif i_type  == '3':
+            Message = 'TRIPLE INDIRECT BLOCK'
+
+        if int(item[5]) <0 or int(item[5]) >= total_blocks:
+            print("INVALID {} {} IN INODE {} AT OFFSET {}".format(Message, item[5], item[1], item[3]))
+        elif int(item[5]) < BG_DATA_BLOCK and int(item[5]) > 0:
+            print("RESERVED {} {} IN INODE {} AT OFFSET {}".format(Message, item[5], item[1], item[3]))
+        elif int(item[5]) > 0:
+            allocated_blocks.append(int(item[5]))
+
+    # check the unreferenced and repeatedly allocated blocl
+    for item in range(BG_DATA_BLOCK,total_blocks):
+        if item not in allocated_blocks and item not in bfree_list:
+            print("UNREFERENCED BLOCK {}".format(item))
+        if item in BLOCKS_IN_USE and item in BFREE_list:
+            print("ALLOCATED BLOCK {} ON FREELIST".format(item))
 
 
 
+
+
+
+if __name__ == '__main__':
+   main()
 
 
 
