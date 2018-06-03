@@ -104,6 +104,55 @@ def main():
             print("ALLOCATED BLOCK {} ON FREELIST".format(item))
 
 
+    ### Check the duplicated blocks
+    duplicate_list = []
+    block_dict = dict()
+    for i in range(BG_DATA_BLOCK,total_blocks):
+        block_dict[i] = 0
+
+    for item in inode_list:
+        for inode in item[12:27]:
+            if int(inode) in block_dict:
+                block_dict[int(inode)]+=1
+                if block_dict[int(inode)] > 1:
+                    if inode not in duplicate_list and inode not in bfree_list:
+                        duplicate_list.append(inode)
+
+    for item in indirect_entries:
+      if int(item[5]) in block_dict:
+            block_dict[int(item[5])] += 1
+            if block_dict[int(item[5])] > 1:
+               if item[5] not in duplicate_list and item[5] not in BFREE_list:
+                  duplicate_list.append(item[5])
+
+
+    for block in duplicate_list:
+        for item in INODE_list:
+         block_offset = 0
+         inode_num = item[1]
+         for inode_block in item[12:24]:
+            if block == inode_block:
+               print("DUPLICATE BLOCK {} IN INODE {} AT OFFSET {}".format(block, inode_num, block_offset))
+            block_offset += 1
+         if block == item[24]:
+            print("DUPLICATE INDIRECT BLOCK {} IN INODE {} AT OFFSET 12".format(block, inode_num))
+         if block == item[25]:
+            print("DUPLICATE DOUBLE INDIRECT BLOCK {} IN INODE {} AT OFFSET 268".format(block, inode_num))
+         if block == item[26]:
+            print("DUPLICATE TRIPLE INDIRECT BLOCK {} IN INODE {} AT OFFSET 65804".format(block, inode_num))
+      ### handle indirect duplicates : 
+      for item in indirect_entries:
+         inode_num = item[1]
+         if block == item[5]:
+            Message = ''
+            if int(item[2]) == 1:
+               Message = " " 
+            elif int(item[2]) == 2:
+               Message = " INDIRECT "
+            else :
+               Message = " DOUBLE INDIRECT "
+            print("DUPLICATE{}BLOCK {} IN INODE {} AT OFFSET {}".format(Message, block, inode_num, item[3]))
+
 
 
 
