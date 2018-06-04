@@ -1,6 +1,6 @@
-#NAME: Muchen Liu
-#EMAIL: liumuchen1996@gmail.com
-#ID: 604626024
+#NAME: Muchen Liu, Chengyu Wang
+#EMAIL: liumuchen1996@gmail.com, wangchengyu2015@gmail.com
+#ID: 604626024, 204613387
 
 lab3b.py: python source file
 Makefile: support build, clean and dist option
