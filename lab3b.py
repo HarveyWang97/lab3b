@@ -165,12 +165,12 @@ def main():
     inodes_reference_dic[2] = 1
 
     # Count references for inodes
-    for entry in inode_list:
-        if entry[2] != "0":
-            inodes_reference_dic[int(entry[1])] += 1
+    for item in inode_list:
+        if item[2] != "0":
+            inodes_reference_dic[int(item[1])] += 1
 
-    for entry in ifree_list:
-      inodes_reference_dic[int(entry)] += 1
+    for item in ifree_list:
+      inodes_reference_dic[int(item)] += 1
 
     # check if inode referenced and is on the free list
     for key, value in inodes_reference_dic.iteritems():
@@ -181,8 +181,8 @@ def main():
 
     # Ccheck allocated inode on the free list
     for inode in ifree_list:
-        for entry in inode_list:
-            if entry[1] == inode:
+        for item in inode_list:
+            if item[1] == inode:
                 print("ALLOCATED INODE {} ON FREELIST".format(inode))
                 Inodes_in_use.append(inode)
 
@@ -194,38 +194,38 @@ def main():
     for i in range(bg_inode_table, total_inodes + 1):
       inodes_dirent[i] = 0
 
-    for entry in dirent_list:
-        if int(entry[3]) in inodes_dirent:
-           inodes_dirent[int(entry[3])] += 1
+    for item in dirent_list:
+        if int(item[3]) in inodes_dirent:
+           inodes_dirent[int(item[3])] += 1
 
     for inode in inode_list:
-        lk = inodes_dirent.get(int(inode[1]))
+        link = inodes_dirent.get(int(inode[1]))
         linknum = int(inode[6])
 
-        if lk != linknum:
-             print("INODE {} HAS {} LINKS BUT LINKCOUNT IS {}".format(inode[1], lk, linknum))
+        if link != linknum:
+             print("INODE {} HAS {} LINKS BUT LINKCOUNT IS {}".format(inode[1], link, linknum))
 
    # unused or wrong inodes should not be referenced
-    for entry in dirent_list:
-        if entry[3] not in Inodes_in_use and entry[3] in ifree_list:
-            print("DIRECTORY INODE {} NAME {} UNALLOCATED INODE {}".format(entry[1], entry[6], entry[3]))
-        if entry[3] not in ifree_list and int(entry[3]) not in Inodes_in_use:
-            print("DIRECTORY INODE {} NAME {} INVALID INODE {}".format(entry[1], entry[6], entry[3]))
+    for item in dirent_list:
+        if item[3] not in Inodes_in_use and item[3] in ifree_list:
+            print("DIRECTORY INODE {} NAME {} UNALLOCATED INODE {}".format(item[1], item[6], item[3]))
+        if item[3] not in ifree_list and int(item[3]) not in Inodes_in_use:
+            print("DIRECTORY INODE {} NAME {} INVALID INODE {}".format(item[1], item[6], item[3]))
 
     parent_child_map = dict()
     parent_child_map[2] = 2
-    for entry in dirent_list:
-        if entry[6] != "'.'" and entry[6] != "'..'" and int(entry[3]) not in parent_child_map:
-            parent_child_map[int(entry[3])] = int(entry[1])
+    for item in dirent_list:
+        if item[6] != "'.'" and item[6] != "'..'" and int(item[3]) not in parent_child_map:
+            parent_child_map[int(item[3])] = int(item[1])
 
-    for entry in dirent_list:
-        if entry[6] == "'.'" and entry[1] != entry[3]:
-            print("DIRECTORY INODE {} NAME {} LINK TO INODE {} SHOULD BE {}".format(entry[1], entry[6], entry[3], entry[1]))
+    for item in dirent_list:
+        if item[6] == "'.'" and item[1] != item[3]:
+            print("DIRECTORY INODE {} NAME {} LINK TO INODE {} SHOULD BE {}".format(item[1], item[6], item[3], item[1]))
 
-        if entry[6] == "'..'":
-            parent = parent_child_map.get(int(entry[1]))
-            if parent != int(entry[3]) and parent != None:
-                print("DIRECTORY INODE {} NAME {} LINK TO INODE {} SHOULD BE {}".format(entry[1], entry[6], entry[3], parent))
+        if item[6] == "'..'":
+            parent = parent_child_map.get(int(item[1]))
+            if parent != int(item[3]) and parent != None:
+                print("DIRECTORY INODE {} NAME {} LINK TO INODE {} SHOULD BE {}".format(item[1], item[6], item[3], item))
 
 if __name__ == '__main__':
    main()
