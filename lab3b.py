@@ -225,7 +225,7 @@ def main():
         if item[6] == "'..'":
             parent = parent_child_map.get(int(item[1]))
             if parent != int(item[3]) and parent != None:
-                print("DIRECTORY INODE {} NAME {} LINK TO INODE {} SHOULD BE {}".format(item[1], item[6], item[3], item))
+                print("DIRECTORY INODE {} NAME {} LINK TO INODE {} SHOULD BE {}".format(item[1], item[6], item[3], parent))
 
 if __name__ == '__main__':
    main()
