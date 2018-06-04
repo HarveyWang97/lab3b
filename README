@@ -1,0 +1,7 @@
+#NAME: Muchen Liu
+#EMAIL: liumuchen1996@gmail.com
+#ID: 604626024
+
+lab3b.py: python source file
+Makefile: support build, clean and dist option
+README: description of all containing files and information of submission

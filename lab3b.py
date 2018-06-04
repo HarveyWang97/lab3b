@@ -5,16 +5,16 @@ import csv
 import math
 
 def main():
-	if len(sys.argv) != 2:
-		sys.stderr.write("Wrong number of arguments\n")
-      	sys.exit(1)
+    if len(sys.argv) != 2:
+        sys.stderr.write("Wrong number of arguments\n")
+        sys.exit(1)
 
     try:
-    	f = open(sys.argv[1],'r')
-    	csv_file = csv.reader(f)
+        f = open(sys.argv[1],'r')
+        csv_file = csv.reader(f)
     except:
-    	sys.stderr.write("Cannot open the input file\n")
-    	sys.exit(1)
+        sys.stderr.write("Cannot open the input file\n")
+        sys.exit(1)
 
     # for storing the information
     inode_list = []
@@ -32,24 +32,25 @@ def main():
     first_inode_block = 0
 
     for line in csv_file:
-    	if line[0] == "SUPERBLOCK":
-    		total_blocks = int(line[1])
-    		total_inodes = int(line[2])
-    		block_size = int(line[3])
-    		inode_size = int(line[4])
-    		bg_inode_table = int(line[7])
-    	elif line[0] == "GROUP":
-    		first_inode_block = int(line[8])
-    	elif line[0] == "BFREE":
-    		bfree_list.append(int(line[1]))
-    	elif line[0] == "IFREE":
-    		ifree_list.append(int(line[1]))
-    	elif(line[0] == "INODE"):
-        	inode_list.append(line)
-      	elif(line[0] == "INDIRECT"):
-         	indirect_entries.append(line)
-      	elif(line[0] == "DIRENT"):
-         	dirent_list.append(line)
+        if line[0] == "SUPERBLOCK":
+            total_blocks = int(line[1])
+            total_inodes = int(line[2])
+            block_size = int(line[3])
+            inode_size = int(line[4])
+            bg_inode_table = int(line[7])
+        elif line[0] == "GROUP":
+            first_inode_block = int(line[8])
+        elif line[0] == "BFREE":
+            bfree_list.append(int(line[1]))
+        elif line[0] == "IFREE":
+            ifree_list.append(line[1])
+        elif(line[0] == "INODE"):
+            inode_list.append(line)
+        elif(line[0] == "INDIRECT"):
+            indirect_entries.append(line)
+        elif(line[0] == "DIRENT"):
+            dirent_list.append(line)
+
 
     BG_DATA_BLOCK = int(first_inode_block + math.ceil( (total_inodes * inode_size) / block_size ))
     allocated_blocks = []
@@ -74,7 +75,7 @@ def main():
                 print("INVALID {} {} IN INODE {} AT OFFSET {}".format(Message,inode,num, offset))
             elif int(inode) < BG_DATA_BLOCK and int(inode) > 0:
                 print("RESERVED {} {} IN INODE {} AT OFFSET {}".format(Message, inode, num, offset))
-            elif int(block) > 0:
+            elif int(inode) > 0:
                 allocated_blocks.append(int(inode))
             block_offset+=1
 
@@ -100,7 +101,7 @@ def main():
     for item in range(BG_DATA_BLOCK,total_blocks):
         if item not in allocated_blocks and item not in bfree_list:
             print("UNREFERENCED BLOCK {}".format(item))
-        if item in BLOCKS_IN_USE and item in BFREE_list:
+        if item in allocated_blocks and item in bfree_list:
             print("ALLOCATED BLOCK {} ON FREELIST".format(item))
 
 
@@ -122,40 +123,109 @@ def main():
       if int(item[5]) in block_dict:
             block_dict[int(item[5])] += 1
             if block_dict[int(item[5])] > 1:
-               if item[5] not in duplicate_list and item[5] not in BFREE_list:
+               if item[5] not in duplicate_list and item[5] not in bfree_list:
                   duplicate_list.append(item[5])
 
 
     for block in duplicate_list:
-        for item in INODE_list:
-         block_offset = 0
-         inode_num = item[1]
-         for inode_block in item[12:24]:
-            if block == inode_block:
-               print("DUPLICATE BLOCK {} IN INODE {} AT OFFSET {}".format(block, inode_num, block_offset))
-            block_offset += 1
-         if block == item[24]:
-            print("DUPLICATE INDIRECT BLOCK {} IN INODE {} AT OFFSET 12".format(block, inode_num))
-         if block == item[25]:
-            print("DUPLICATE DOUBLE INDIRECT BLOCK {} IN INODE {} AT OFFSET 268".format(block, inode_num))
-         if block == item[26]:
-            print("DUPLICATE TRIPLE INDIRECT BLOCK {} IN INODE {} AT OFFSET 65804".format(block, inode_num))
-      ### handle indirect duplicates : 
-      for item in indirect_entries:
+        for item in inode_list:
+             block_offset = 0
+             inode_num = item[1]
+             for inode_block in item[12:24]:
+                if block == inode_block:
+                   print("DUPLICATE BLOCK {} IN INODE {} AT OFFSET {}".format(block, inode_num, block_offset))
+                block_offset += 1
+             if block == item[24]:
+                print("DUPLICATE INDIRECT BLOCK {} IN INODE {} AT OFFSET 12".format(block, inode_num))
+             if block == item[25]:
+                print("DUPLICATE DOUBLE INDIRECT BLOCK {} IN INODE {} AT OFFSET 268".format(block, inode_num))
+             if block == item[26]:
+                print("DUPLICATE TRIPLE INDIRECT BLOCK {} IN INODE {} AT OFFSET 65804".format(block, inode_num))
+        ### handle indirect duplicates:
+        for item in indirect_entries:
          inode_num = item[1]
          if block == item[5]:
             Message = ''
             if int(item[2]) == 1:
-               Message = " " 
+               Message = " "
             elif int(item[2]) == 2:
                Message = " INDIRECT "
             else :
                Message = " DOUBLE INDIRECT "
             print("DUPLICATE{}BLOCK {} IN INODE {} AT OFFSET {}".format(Message, block, inode_num, item[3]))
 
+# I-node Allocation Audits
+
+    Inodes_in_use = []
+
+    inodes_reference_dic = dict()
+    for i in range(bg_inode_table, total_inodes + 1):
+        inodes_reference_dic[i] = 0
+
+    inodes_reference_dic[2] = 1
+
+    # Count references for inodes
+    for entry in inode_list:
+        if entry[2] != "0":
+            inodes_reference_dic[int(entry[1])] += 1
+
+    for entry in ifree_list:
+      inodes_reference_dic[int(entry)] += 1
+
+    # check if inode referenced and is on the free list
+    for key, value in inodes_reference_dic.iteritems():
+        if value == 0:
+            print("UNALLOCATED INODE {} NOT ON FREELIST".format(key))
+        elif key not in ifree_list:
+            Inodes_in_use.append(key)
+
+    # Ccheck allocated inode on the free list
+    for inode in ifree_list:
+        for entry in inode_list:
+            if entry[1] == inode:
+                print("ALLOCATED INODE {} ON FREELIST".format(inode))
+                Inodes_in_use.append(inode)
 
 
+#directory consistency Audits
 
+    inodes_dirent = dict()
+    inodes_dirent[2] = 0
+    for i in range(bg_inode_table, total_inodes + 1):
+      inodes_dirent[i] = 0
+
+    for entry in dirent_list:
+        if int(entry[3]) in inodes_dirent:
+           inodes_dirent[int(entry[3])] += 1
+
+    for inode in inode_list:
+        lk = inodes_dirent.get(int(inode[1]))
+        linknum = int(inode[6])
+
+        if lk != linknum:
+             print("INODE {} HAS {} LINKS BUT LINKCOUNT IS {}".format(inode[1], lk, linknum))
+
+   # unused or wrong inodes should not be referenced
+    for entry in dirent_list:
+        if entry[3] not in Inodes_in_use and entry[3] in ifree_list:
+            print("DIRECTORY INODE {} NAME {} UNALLOCATED INODE {}".format(entry[1], entry[6], entry[3]))
+        if entry[3] not in ifree_list and int(entry[3]) not in Inodes_in_use:
+            print("DIRECTORY INODE {} NAME {} INVALID INODE {}".format(entry[1], entry[6], entry[3]))
+
+    parent_child_map = dict()
+    parent_child_map[2] = 2
+    for entry in dirent_list:
+        if entry[6] != "'.'" and entry[6] != "'..'" and int(entry[3]) not in parent_child_map:
+            parent_child_map[int(entry[3])] = int(entry[1])
+
+    for entry in dirent_list:
+        if entry[6] == "'.'" and entry[1] != entry[3]:
+            print("DIRECTORY INODE {} NAME {} LINK TO INODE {} SHOULD BE {}".format(entry[1], entry[6], entry[3], entry[1]))
+
+        if entry[6] == "'..'":
+            parent = parent_child_map.get(int(entry[1]))
+            if parent != int(entry[3]) and parent != None:
+                print("DIRECTORY INODE {} NAME {} LINK TO INODE {} SHOULD BE {}".format(entry[1], entry[6], entry[3], parent))
 
 if __name__ == '__main__':
    main()
